@@ -201,9 +201,9 @@ local function AddNewFolder(node)
 	end
 	local path, area = GetNodePath(node)
 	if (area == 0) then
-		path = AdvDupe2.DataFolder .. "/" .. path .. "/" .. name
+		path = AdvDupe2.DATA_FOLDER .. "/" .. path .. "/" .. name
 	elseif (area == 1) then
-		path = AdvDupe2.DataFolder .. "/=Public=/" .. path .. "/" .. name
+		path = AdvDupe2.DATA_FOLDER .. "/=Public=/" .. path .. "/" .. name
 	else
 		path = "adv_duplicator/" .. path .. "/" .. name
 	end
@@ -266,7 +266,7 @@ end
 local function GetFullPath(node)
 	local path, area = GetNodePath(node)
 	if (area == 0) then
-		path = AdvDupe2.DataFolder .. "/" .. path .. "/"
+		path = AdvDupe2.DATA_FOLDER .. "/" .. path .. "/"
 	elseif (area == 1) then
 
 	else
@@ -291,9 +291,9 @@ local function RenameFileCl(node, name)
 	local path, area = GetNodePath(node)
 	local File, FilePath, tempFilePath = "", "", ""
 	if (area == 0) then
-		tempFilePath = AdvDupe2.DataFolder .. "/" .. path
+		tempFilePath = AdvDupe2.DATA_FOLDER .. "/" .. path
 	elseif (area == 1) then
-		tempFilePath = AdvDupe2.DataFolder .. "/=Public=/" .. path
+		tempFilePath = AdvDupe2.DATA_FOLDER .. "/=Public=/" .. path
 	elseif (area == 2) then
 		tempFilePath = "adv_duplicator/" .. path
 	end
@@ -332,7 +332,7 @@ local function MoveFileClient(node)
 		AdvDupe2.Notify("You muse select a folder as a destination.", NOTIFY_ERROR)
 		return
 	end
-	local base = AdvDupe2.DataFolder
+	local base = AdvDupe2.DATA_FOLDER
 	local ParentNode
 
 	local node2 = node.Control.ActionNode
@@ -418,9 +418,9 @@ function BROWSER:DoNodeRightClick(node)
 			Menu:AddOption("Preview", function()
 				local ReadPath, ReadArea = GetNodePath(node.Ref)
 				if (ReadArea == 0) then
-					ReadPath = AdvDupe2.DataFolder .. "/" .. ReadPath .. ".txt"
+					ReadPath = AdvDupe2.DATA_FOLDER .. "/" .. ReadPath .. ".txt"
 				elseif (ReadArea == 1) then
-					ReadPath = AdvDupe2.DataFolder .. "/-Public-/" .. ReadPath .. ".txt"
+					ReadPath = AdvDupe2.DATA_FOLDER .. "/-Public-/" .. ReadPath .. ".txt"
 				else
 					ReadPath = "adv_duplicator/" .. ReadPath .. ".txt"
 				end
@@ -445,9 +445,9 @@ function BROWSER:DoNodeRightClick(node)
 			Menu:AddOption("Preview", function()
 				local ReadPath, ReadArea = GetNodePath(node)
 				if (ReadArea == 0) then
-					ReadPath = AdvDupe2.DataFolder .. "/" .. ReadPath .. ".txt"
+					ReadPath = AdvDupe2.DATA_FOLDER .. "/" .. ReadPath .. ".txt"
 				elseif (ReadArea == 1) then
-					ReadPath = AdvDupe2.DataFolder .. "/-Public-/" .. ReadPath .. ".txt"
+					ReadPath = AdvDupe2.DATA_FOLDER .. "/-Public-/" .. ReadPath .. ".txt"
 				else
 					ReadPath = "adv_duplicator/" .. ReadPath .. ".txt"
 				end
@@ -536,7 +536,7 @@ function BROWSER:DoNodeRightClick(node)
 					if (area == 2) then
 						path = "adv_duplicator/" .. path .. ".txt"
 					else
-						path = AdvDupe2.DataFolder .. "/" .. path .. ".txt"
+						path = AdvDupe2.DATA_FOLDER .. "/" .. path .. ".txt"
 					end
 					node.Control:RemoveNode(node)
 					file.Delete(path)
@@ -680,7 +680,7 @@ function BROWSER:DoNodeRightClick(node)
 					if (area == 2) then
 						path = "adv_duplicator/" .. path .. "/"
 					else
-						path = AdvDupe2.DataFolder .. "/" .. path .. "/"
+						path = AdvDupe2.DATA_FOLDER .. "/" .. path .. "/"
 					end
 					node.Control:RemoveNode(node)
 					DeleteFilesInFolders(path)
