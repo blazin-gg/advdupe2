@@ -7,13 +7,13 @@
 
 require( "duplicator" )
 
+local logger = AdvDupe2._logger:CreateChild("Clipboard")
+
 AdvDupe2.duplicator = {}
 
 AdvDupe2.JobManager = {}
 AdvDupe2.JobManager.PastingHook = false
 AdvDupe2.JobManager.Queue = {}
-
-local debugConvar = GetConVar("AdvDupe2_DebugInfo")
 
 local gtSetupTable = {
 	SERIAL = {
@@ -92,9 +92,7 @@ local function CopyClassArgTable(tab)
 					newtable[k] = v
 				end
 			else
-				if debugConvar:GetBool() then
-					print("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!")
-				end
+				logger:Debug("ClassArg table with key \"{}\" has unsupported value of type \"{}\".", k, type(v))
 			end
 		end
 		return newtable
@@ -125,7 +123,9 @@ local function CopyEntTable(Ent, Offset)
 
 	if Ent.PreEntityCopy then
 		local status, valid = pcall(Ent.PreEntityCopy, Ent)
-		if (not status) then print("AD2 PreEntityCopy Error: " .. tostring(valid)) end
+		if (not status) then
+			logger:Error("PreEntityCopy Error: {}", valid)
+		end
 	end
 
 	local EntityClass = duplicator.FindEntityClass(Ent:GetClass())
@@ -148,8 +148,8 @@ local function CopyEntTable(Ent, Offset)
 					else
 						Tab[Key] = EntTable[Key]
 					end
-				elseif varType ~= TYPE_NIL and debugConvar:GetBool() then
-					print("[AdvDupe2] Entity ClassArg \"" .. Key .. "\" of type \"" .. Ent:GetClass() .. "\" has unsupported value of type \"" .. type(EntTable[Key]) .. "\"!\n")
+				elseif varType ~= TYPE_NIL then
+					logger:Debug("Entity ClassArg \"{}\" of type \"{}\" has unsupported value of type \"{}\".", Key, Ent:GetClass(), type(EntTable[Key]))
 				end
 			end
 		end
@@ -163,7 +163,7 @@ local function CopyEntTable(Ent, Offset)
 	if Ent.PostEntityCopy then
 		local status, valid = pcall(Ent.PostEntityCopy, Ent)
 		if(not status)then
-			print("AD2 PostEntityCopy Error: "..tostring(valid))
+			logger:Error("PostEntityCopy Error: {}", valid)
 		end
 	end
 
@@ -270,7 +270,7 @@ local function CopyEntTable(Ent, Offset)
 	if Ent.OnEntityCopyTableFinish then
 		local status, valid = pcall(Ent.OnEntityCopyTableFinish, Ent, Tab)
 		if (not status) then
-			print("AD2 OnEntityCopyTableFinish Error: " .. tostring(valid))
+			logger:Error("OnEntityCopyTableFinish Error: {}", valid)
 		end
 	end
 
@@ -528,11 +528,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 						Val = EntityList[Constraint.Entity[i].Index]
 
 						if not IsValid(Val) then
-							if (Player) then
-								Player:ChatPrint("DUPLICATOR: ERROR, " .. Constraint.Type .. " Constraint could not find an entity!")
-							else
-								print("DUPLICATOR: ERROR, " .. Constraint.Type .. " Constraint could not find an entity!")
-							end
+							logger:Debug("{} constraint could not find an entity.", Constraint.Type)
 							return
 						else
 							if (IsValid(Val:GetPhysicsObject())) then
@@ -643,11 +639,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	local ok, Ent = pcall(Factory.Func, unpack(Args, 1, #Factory.Args))
 
 	if not ok or not Ent then
-		if (Player) then
-			AdvDupe2.Notify(Player, "ERROR, Failed to create " .. Constraint.Type .. " Constraint!", NOTIFY_ERROR)
-		else
-			print("DUPLICATOR: ERROR, Failed to create " .. Constraint.Type .. " Constraint!")
-		end
+		logger:Debug("Failed to create a {} constraint.", Constraint.Type)
 		return
 	end
 
@@ -716,10 +708,10 @@ local function ApplyEntityModifiers(Player, Ent)
 		if (ModFunction) then
 			local ok, err = pcall(ModFunction, Player, Ent, Data)
 			if (not ok) then
+				logger:Debug("Failed to apply entity modifier \"{}\": {}", Type, err)
+
 				if (Player) then
-					Player:ChatPrint('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. err)
-				else
-					print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. err)
+					AdvDupe2.Notify(Player, "Failed to apply entity modifier \"" .. tostring(Type) .. "\".", 1)
 				end
 			end
 		end
@@ -727,20 +719,20 @@ local function ApplyEntityModifiers(Player, Ent)
 	if (Ent.EntityMods["mass"] and duplicator.EntityModifiers["mass"]) then
 		local ok, err = pcall(duplicator.EntityModifiers["mass"], Player, Ent, Ent.EntityMods["mass"])
 		if (not ok) then
+			logger:Debug("Failed to apply entity modifier \"mass\": {}", Type, err)
+
 			if (Player) then
-				Player:ChatPrint('Error applying entity modifer, "mass". ERROR: ' .. err)
-			else
-				print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. err)
+				AdvDupe2.Notify(Player, "Failed to apply entity modifier \"mass\".", 1)
 			end
 		end
 	end
 	if(Ent.EntityMods["buoyancy"] and duplicator.EntityModifiers["buoyancy"]) then
 		local ok, err = pcall(duplicator.EntityModifiers["buoyancy"], Player, Ent, Ent.EntityMods["buoyancy"])
 		if (not ok) then
+			logger:Debug("Failed to apply entity modifier \"buoyancy\": {}", Type, err)
+
 			if (Player) then
-				Player:ChatPrint('Error applying entity modifer, "buoyancy". ERROR: ' .. err)
-			else
-				print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. err)
+				AdvDupe2.Notify(Player, "Failed to apply entity modifier \"buoyancy\".", 1)
 			end
 		end
 	end
@@ -756,7 +748,11 @@ local function ApplyBoneModifiers(Player, Ent)
 				if (Ent.PhysicsObjects[Bone]) then
 					local ok, err = pcall(ModFunction, Player, Ent, Bone, PhysObj, Ent.BoneMods[Bone][Type])
 					if (not ok) then
-						Player:ChatPrint('Error applying bone modifer, "' .. tostring(Type) .. '". ERROR: ' .. err)
+						logger:Debug("Failed to apply bone modifier \"{}\": {}", Type, err)
+
+						if (Player) then
+							AdvDupe2.Notify(Player, "Failed to apply bone modifier \"" .. tostring(Type) .. "\".", 1)
+						end
 					end
 				end
 			end
@@ -821,8 +817,6 @@ local function GenericDuplicatorFunction(data, Player)
 	if (not IsValid(Entity)) then
 		if (Player) then
 			reportclass(Player, data.Class)
-		else
-			print("Advanced Duplicator 2 Invalid Class: " .. data.Class)
 		end
 		return nil
 	end
@@ -830,8 +824,6 @@ local function GenericDuplicatorFunction(data, Player)
 	if (not util.IsValidModel(data.Model) and not file.Exists(data.Model, "GAME")) then
 		if (Player) then
 			reportmodel(Player, data.Model)
-		else
-			print("Advanced Duplicator 2 Invalid Model: " .. data.Model)
 		end
 		return nil
 	end
@@ -859,8 +851,6 @@ local function MakeProp(Player, Pos, Ang, Model, PhysicsObject, Data)
 	if (not util.IsValidModel(Model) and not file.Exists(Data.Model, "GAME")) then
 		if (Player) then
 			reportmodel(Player, Data.Model)
-		else
-			print("Advanced Duplicator 2 Invalid Model: " .. Model)
 		end
 		return nil
 	end
@@ -919,7 +909,6 @@ local function CreateEntityFromTable(EntTable, Player)
 
 	local EntityClass = duplicator.FindEntityClass(EntTable.Class)
 	if not IsAllowed(Player, EntTable.Class, EntityClass) then
-		Player:ChatPrint([[Entity Class Black listed, "]] .. EntTable.Class .. [["]])
 		return nil
 	end
 
@@ -945,7 +934,7 @@ local function CreateEntityFromTable(EntTable, Player)
 		end
 
 		if (sent == false) then
-			print("Advanced Duplicator 2: Creation rejected for class, : " .. EntTable.Class)
+			logger:Info("Spawning of {} was rejected.", EntTable.Class)
 			return nil
 		else
 			sent = true
@@ -954,7 +943,7 @@ local function CreateEntityFromTable(EntTable, Player)
 		if IsAllowed(Player, EntTable.Class, EntityClass) then
 			status, valid = pcall(GenericDuplicatorFunction, EntTable, Player)
 		else
-			print("Advanced Duplicator 2: ENTITY CLASS IS BLACKLISTED, CLASS NAME: " .. EntTable.Class)
+			logger:Info("{} is a blacklisted entity class and will not be spawned.", EntTable.Class)
 			return nil
 		end
 	end
@@ -1005,7 +994,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			end
 
 			if (sent == false) then
-				print("Advanced Duplicator 2: Creation rejected for class, : " .. EntTable.Class)
+				logger:Info("Spawning of {} was rejected.", EntTable.Class)
 				return nil
 			else
 				sent = true
@@ -1019,7 +1008,7 @@ local function CreateEntityFromTable(EntTable, Player)
 
 			hook.Remove( "OnEntityCreated", "AdvDupe2_GetLastEntitiesCreated" )
 		else
-			print("Advanced Duplicator 2: ENTITY CLASS IS BLACKLISTED, CLASS NAME: " .. EntTable.Class)
+			logger:Info("{} is a blacklisted entity class and will not be spawned.", EntTable.Class)
 			return nil
 		end
 	end
@@ -1067,7 +1056,6 @@ local function CreateEntityFromTable(EntTable, Player)
 		return valid
 	else
 		if (status == false) then
-			print("Advanced Duplicator 2: Error creating entity, removing last created entities")
 			for _, CreatedEntity in pairs(CreatedEntities) do
 				SafeRemoveEntity(CreatedEntity)
 			end
@@ -1165,7 +1153,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 			if v.PostEntityPaste then
 				local status, valid = pcall(v.PostEntityPaste, v, Player, v, CreatedEntities)
 				if (not status) then
-					print("AD2 PostEntityPaste Error: " .. tostring(valid))
+					logger:Error("An error was thrown in PostEntityPaste: {}", valid)
 				end
 			end
 
@@ -1190,7 +1178,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 			if v.PostEntityPaste then
 				local status, valid = pcall(v.PostEntityPaste, v, Player, v, CreatedEntities)
 				if (not status) then
-					print("AD2 PostEntityPaste Error: " .. tostring(valid))
+					logger:Error("An error was thrown in PostEntityPaste: {}", valid)
 				end
 			end
 
@@ -1322,7 +1310,7 @@ local function AdvDupe2_Spawn()
 				if Ent.PostEntityPaste then
 					local status, valid = pcall(Ent.PostEntityPaste, Ent, Queue.Player, Ent, Queue.CreatedEntities)
 					if (not status) then
-						print("AD2 PostEntityPaste Error: " .. tostring(valid))
+						logger:Error("An error was thrown in PostEntityPaste: {}", valid)
 					end
 				end
 			end
@@ -1368,10 +1356,6 @@ local function AdvDupe2_Spawn()
 		Queue.Current = Queue.Current + 1
 
 		if (Queue.Current > #Queue.ConstraintList) then
-
-			local unfreeze = tobool(Queue.Player:GetInfo("advdupe2_paste_unfreeze")) or false
-			local preservefrozenstate = tobool(Queue.Player:GetInfo("advdupe2_preserve_freeze")) or false
-
 			-- Remove the undo for stopping pasting
 			local undotxt = Queue.Name and ("AdvDupe2 ("..Queue.Name..")") or "AdvDupe2"
 			local undos = undo.GetTable()[Queue.Player:UniqueID()]
@@ -1415,36 +1399,12 @@ local function AdvDupe2_Spawn()
 						edit = false
 					end
 
-					local physCount = v:GetPhysicsObjectCount() - 1
-
-					if (unfreeze) then
-						for i = 0, physCount do
-							phys = v:GetPhysicsObjectNum(i)
-							if (IsValid(phys)) then
-								phys:EnableMotion(true) -- Unfreeze the entitiy and all of its objects
-								phys:Wake()
-							end
-						end
-					elseif (preservefrozenstate) then
-						for i = 0, physCount do
-							phys = v:GetPhysicsObjectNum(i)
-							if (IsValid(phys)) then
-								if (Queue.EntityList[k].BuildDupeInfo.PhysicsObjects[i].Frozen) then
-									phys:EnableMotion(true) -- Restore the entity and all of its objects to their original frozen state
-									phys:Wake()
-								else
-									Queue.Player:AddFrozenPhysicsObject(v, phys)
-								end
-							end
-						end
-					else
-						for i = 0, physCount do
-							phys = v:GetPhysicsObjectNum(i)
-							if (IsValid(phys)) then
-								if (phys:IsMoveable()) then
-									phys:EnableMotion(false) -- Freeze the entitiy and all of its objects
-									Queue.Player:AddFrozenPhysicsObject(v, phys)
-								end
+					for i = 0, v:GetPhysicsObjectCount() do
+						phys = v:GetPhysicsObjectNum(i)
+						if (IsValid(phys)) then
+							if (phys:IsMoveable()) then
+								phys:EnableMotion(false) -- Freeze the entitiy and all of its objects
+								Queue.Player:AddFrozenPhysicsObject(v, phys)
 							end
 						end
 					end
@@ -1488,8 +1448,16 @@ end
 
 local ticktotal = 0
 local function ErrorCatchSpawning()
+	local spawnRate = AdvDupe2.SpawnRate["default"]
 
-	ticktotal = ticktotal + math.max(GetConVarNumber("AdvDupe2_SpawnRate"), 0.01)
+	local queue = AdvDupe2.JobManager.Queue[AdvDupe2.JobManager.CurrentPlayer]
+	local ply = queue and queue.Player or NULL
+	if IsValid(ply) then
+		spawnRate = AdvDupe2.SpawnRate[ply:GetSecondaryUserGroup()] or spawnRate
+	end
+
+	ticktotal = ticktotal + spawnRate
+
 	while ticktotal >= 1 do
 		ticktotal = ticktotal - 1
 		local status, err = pcall(AdvDupe2_Spawn)
@@ -1498,14 +1466,14 @@ local function ErrorCatchSpawning()
 			-- PUT ERROR LOGGING HERE
 
 			if (not AdvDupe2.JobManager.Queue) then
-				print("[AdvDupe2Notify]\t" .. err)
+				logger:Error("An error was thrown in AdvDupe2_Spawn: {}", err)
 				AdvDupe2.JobManager.Queue = {}
 				return
 			end
 
 			local Queue = AdvDupe2.JobManager.Queue[AdvDupe2.JobManager.CurrentPlayer]
 			if (not Queue) then
-				print("[AdvDupe2Notify]\t" .. err)
+				logger:Error("An error was thrown in AdvDupe2_Spawn: {}", err)
 				return
 			end
 
@@ -1525,7 +1493,7 @@ local function ErrorCatchSpawning()
 					end
 				end
 			else
-				print("[AdvDupe2Notify]\t" .. err)
+				logger:Error("An error was thrown in AdvDupe2_Spawn: {}", err)
 			end
 
 			for k, v in pairs(Queue.CreatedEntities) do
@@ -1600,15 +1568,6 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 		table.insert(Queue.SortedEntities, k)
 	end
 
-	if (Player.AdvDupe2.Name) then
-		print(
-			"[AdvDupe2NotifyPaste]\t Player: " .. Player:Nick() .. " Pasted File, " .. Player.AdvDupe2.Name .. " with, " ..
-				#Queue.SortedEntities .. " Entities and " .. #Player.AdvDupe2.Constraints .. " Constraints.")
-	else
-		print("[AdvDupe2NotifyPaste]\t Player: " .. Player:Nick() .. " Pasted, " .. #Queue.SortedEntities ..
-						" Entities and " .. #Player.AdvDupe2.Constraints .. " Constraints.")
-	end
-
 	Queue.Plus = #Queue.SortedEntities
 	Queue.Percent = 1 / (#Queue.SortedEntities + #Queue.ConstraintList)
 	AdvDupe2.InitProgressBar(Player, "Queued:")
@@ -1625,4 +1584,7 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 	undo.SetPlayer(Player)
 	undo.AddFunction(RemoveSpawnedEntities, i)
 	undo.Finish(undotxt)
+
+	logger:Info("{} pasted \"{}\" with {} entities and {} constraints.",
+		Player, Player.AdvDupe2.Name or "UNKNOWN", #Queue.SortedEntities, #Player.AdvDupe2.Constraints)
 end

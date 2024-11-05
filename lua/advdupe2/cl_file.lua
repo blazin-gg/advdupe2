@@ -36,11 +36,11 @@ local function AdvDupe2_ReceiveFile(len, ply)
 		end
 		dupefile:Write(data)
 		dupefile:Close()
-		
+
 		local errored = false
 		if(LocalPlayer():GetInfo("advdupe2_debug_openfile")=="1")then
 			if(not file.Exists(path, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
-			
+
 			local readFile = file.Open(path, "rb", "DATA")
 			if not readFile then AdvDupe2.Notify("File could not be read", NOTIFY_ERROR) return end
 			local readData = readFile:Read(readFile:Size())
@@ -53,7 +53,7 @@ local function AdvDupe2_ReceiveFile(len, ply)
 				errored = true
 			end
 		end
-		
+
 		local filename = string.StripExtension(string.GetFileFromFilename( path ))
 		if(AutoSave)then
 			if(IsValid(AdvDupe2.FileBrowser.AutoSaveNode))then
@@ -84,21 +84,21 @@ local uploading = nil
 function AdvDupe2.UploadFile(ReadPath, ReadArea)
 	if uploading then AdvDupe2.Notify("Already opening file, please wait.", NOTIFY_ERROR) return end
 	if(ReadArea==0)then
-		ReadPath = AdvDupe2.DataFolder.."/"..ReadPath..".txt"
+		ReadPath = AdvDupe2.DATA_FOLDER.."/"..ReadPath..".txt"
 	elseif(ReadArea==1)then
-		ReadPath = AdvDupe2.DataFolder.."/-Public-/"..ReadPath..".txt"
+		ReadPath = AdvDupe2.DATA_FOLDER.."/-Public-/"..ReadPath..".txt"
 	else
 		ReadPath = "adv_duplicator/"..ReadPath..".txt"
 	end
-	
+
 	if(not file.Exists(ReadPath, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
-	
+
 	local read = file.Read(ReadPath)
 	if not read then AdvDupe2.Notify("File could not be read", NOTIFY_ERROR) return end
 	local name = string.Explode("/", ReadPath)
 	name = name[#name]
 	name = string.sub(name, 1, #name-4)
-	
+
 	local success, dupe, info, moreinfo = AdvDupe2.Decode(read)
 	if(success)then
 		net.Start("AdvDupe2_ReceiveFile")
@@ -109,7 +109,7 @@ function AdvDupe2.UploadFile(ReadPath, ReadArea)
 			AdvDupe2.RemoveProgressBar()
 		end)
 		net.SendToServer()
-		
+
 		AdvDupe2.LoadGhosts(dupe, info, moreinfo, name)
 	else
 		AdvDupe2.Notify("File could not be decoded. ("..dupe..") Upload Canceled.", NOTIFY_ERROR)

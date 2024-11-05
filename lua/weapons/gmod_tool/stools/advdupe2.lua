@@ -95,7 +95,7 @@ if(SERVER) then
 		end
 
 		if #fullSystems ~= 0 then
-			ply:ChatPrint("DUPLICATOR: WARNING, Number of constraints exceeds 100: (".. #ret .."). Constraint sorting might not work as expected.")
+			AdvDupe2.Notify(ply, "Large constraint systems exist, this may cause problems.", 1)
 		end
 
 		return ret
@@ -1012,8 +1012,6 @@ if(CLIENT) then
 	CreateClientConVar("advdupe2_paste_constraints", 1, false, true)
 	CreateClientConVar("advdupe2_sort_constraints", 1, true, true)
 	CreateClientConVar("advdupe2_paste_parents", 1, false, true)
-	CreateClientConVar("advdupe2_paste_unfreeze", 0, false, true)
-	CreateClientConVar("advdupe2_preserve_freeze", 0, false, true)
 	CreateClientConVar("advdupe2_copy_outside", 0, false, true)
 	CreateClientConVar("advdupe2_copy_only_mine", 1, false, true)
 	CreateClientConVar("advdupe2_limit_ghost", 100, false, true)
@@ -1069,33 +1067,6 @@ if(CLIENT) then
 		Check:SetValue( 1 )
 		Check:SetToolTip("Paste with or without parenting")
 		CPanel:AddItem(Check)
-
-		local Check_1 = vgui.Create("DCheckBoxLabel")
-		local Check_2 = vgui.Create("DCheckBoxLabel")
-
-		Check_1:SetText( "Unfreeze all after paste" )
-		Check_1:SetDark(true)
-		Check_1:SetConVar( "advdupe2_paste_unfreeze" )
-		Check_1:SetValue( 0 )
-		Check_1.OnChange = function()
-			if(Check_1:GetChecked() and Check_2:GetChecked()) then
-				Check_2:SetValue(0)
-			end
-		end
-		Check_1:SetToolTip("Unfreeze all props after pasting")
-		CPanel:AddItem(Check_1)
-
-		Check_2:SetText( "Preserve frozen state after paste" )
-		Check_2:SetDark(true)
-		Check_2:SetConVar( "advdupe2_preserve_freeze" )
-		Check_2:SetValue( 0 )
-		Check_2.OnChange = function()
-			if(Check_2:GetChecked() and Check_1:GetChecked()) then
-				Check_1:SetValue(0)
-			end
-		end
-		Check_2:SetToolTip("Makes props have the same frozen state as when they were copied")
-		CPanel:AddItem(Check_2)
 
 		Check = vgui.Create("DCheckBoxLabel")
 		Check:SetText( "Area copy constrained props outside of box" )
@@ -1847,11 +1818,11 @@ if(CLIENT) then
 	end)
 
 	net.Receive("AdvDupe2_ReportModel", function()
-		print("Advanced Duplicator 2: Invalid Model: "..net.ReadString())
+		print("AdvDupe2 - Invalid Model: "..net.ReadString())
 	end)
 
 	net.Receive("AdvDupe2_ReportClass", function()
-		print("Advanced Duplicator 2: Invalid Class: "..net.ReadString())
+		print("AdvDupe2 - Invalid Class: "..net.ReadString())
 	end)
 
 	net.Receive("AdvDupe2_ResetDupeInfo", function()

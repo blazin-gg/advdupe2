@@ -11,10 +11,6 @@
 local REVISION = 5
 AdvDupe2.CodecRevision = REVISION
 AdvDupe2.MaxDupeSize = 32e6 -- 32 MB
-
-include( "sh_codec_legacy.lua" )
-AddCSLuaFile( "sh_codec_legacy.lua" )
-
 local pairs = pairs
 local type = type
 local error = error
@@ -509,54 +505,13 @@ function AdvDupe2.Decode(encodedDupe)
 		if success then
 			success, tbl = AdvDupe2.CheckValidDupe(tbl, info)
 		end
+
 		if success then
 			info.revision = rev
+		else
+			ErrorNoHalt(tbl)
 		end
 
 		return success, tbl, info
 	end
 end
-
-if CLIENT then
-
-	concommand.Add("advdupe2_to_json", function(_,_,arg)
-		if not arg[1] then print("Need AdvDupe2 file name argument!") return end
-		local readFileName = "advdupe2/"..arg[1]
-		local writeFileName = "advdupe2/"..string.StripExtension(arg[1])..".json"
-
-		writeFileName = AdvDupe2.SanitizeFilename(writeFileName)
-
-		local readFile = file.Open(readFileName, "rb", "DATA")
-		if not readFile then print("File could not be read or found! ("..readFileName..")") return end
-		local readData = readFile:Read(readFile:Size())
-		readFile:Close()
-		local ok, tbl = AdvDupe2.Decode(readData)
-		local writeFile = file.Open(writeFileName, "wb", "DATA")
-		if not writeFile then print("File could not be written! ("..writeFileName..")") return end
-		writeFile:Write(util.TableToJSON(tbl))
-		writeFile:Close()
-		print("File written! ("..writeFileName..")")
-	end)
-
-	concommand.Add("advdupe2_from_json", function(_,_,arg)
-		if not arg[1] then print("Need json file name argument!") return end
-		local readFileName = "advdupe2/"..arg[1]
-		local writeFileName = "advdupe2/"..string.StripExtension(arg[1])..".txt"
-
-		local readFile = file.Open(readFileName, "rb", "DATA")
-		if not readFile then print("File could not be read or found! ("..readFileName..")") return end
-		local readData = readFile:Read(readFile:Size())
-		readFile:Close()
-
-		AdvDupe2.Encode(util.JSONToTable(readData), {}, function(data)
-			local writeFile = file.Open(writeFileName, "wb", "DATA")
-			if not writeFile then print("File could not be written! ("..writeFileName..")") return end
-			writeFile:Write(data)
-			writeFile:Close()
-			print("File written! ("..writeFileName..")")
-		end)
-	end)
-
-end
-
-

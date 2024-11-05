@@ -10,9 +10,6 @@
 
 AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
-if(WireLib)then
-	include( "entities/base_wire_entity.lua" )
-end
 
 include( "shared.lua" )
 
