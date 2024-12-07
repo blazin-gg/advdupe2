@@ -199,6 +199,11 @@ if(SERVER) then
 		Params: <trace> trace
 		Returns: <boolean> success
 	]]
+	local messages = {
+		["Pasting"] = "pasting.",
+		["Downloading"] = "downloading.",
+		["Uploading"] = "uploading."
+	}
 	function TOOL:LeftClick( trace )
 		if(not trace) then return false end
 
@@ -207,9 +212,11 @@ if(SERVER) then
 
 		if not (dupe and dupe.Entities) then return false end
 
-		if(dupe.Pasting or dupe.Downloading) then
-			AdvDupe2.Notify(ply,"Advanced Duplicator 2 is busy.",NOTIFY_ERROR)
-			return false
+		for key, msg in pairs(messages) do
+			if dupe[key] then
+				AdvDupe2.Notify(ply, "Advanced Duplicator 2 is busy " .. msg, NOTIFY_ERROR)
+				return false
+			end
 		end
 
 		dupe.Angle = GetDupeAngleOffset(ply)
@@ -411,7 +418,7 @@ if(SERVER) then
 			return
 		else
 			if(dupe.Uploading) then
-				AdvDupe2.InitProgressBar(ply, "Opening: ")
+				AdvDupe2.InitProgressBar(ply, "Uploading: ")
 				return
 			elseif(dupe.Downloading) then
 				AdvDupe2.InitProgressBar(ply, "Saving: ")
@@ -994,14 +1001,29 @@ if(CLIENT) then
 		return AdvDupe2.Rotation
 	end
 
-	language.Add( "Tool.advdupe2.name",	"Advanced Duplicator 2" )
-	language.Add( "Tool.advdupe2.desc",	"Duplicate things." )
-	language.Add( "Tool.advdupe2.0",	"Primary: Paste, Secondary: Copy, Secondary+World: Select/Deselect All, Secondary+Shift: Area copy." )
-	language.Add( "Tool.advdupe2.1",	"Primary: Paste, Secondary: Copy an area, Reload: Autosave an area, Secondary+Shift: Cancel." )
-	language.Add( "Undone_AdvDupe2",	"Undone AdvDupe2 paste" )
-	language.Add( "Cleanup_AdvDupe2",	"AdvDupe2 Duplications" )
-	language.Add( "Cleaned_AdvDupe2",	"Cleaned up all AdvDupe2 Duplications" )
-	language.Add( "SBoxLimit_AdvDupe2",	"You've reached the AdvDupe2 Duplicator limit!" )
+	TOOL.Information = {
+		{ name = "left" },
+		{ name = "right", stage = 0 },
+		{ name = "right_world", stage = 0, icon2 = "gui/info" },
+		{ name = "right_shift", stage = 0, icon2 = "gui/info" },
+		{ name = "right_alt", stage = 1 },
+		{ name = "reload_alt", stage = 1 },
+		{ name = "right_shift_alt", stage = 1, icon2 = "gui/info" },
+	}
+
+	language.Add( "Tool.advdupe2.name",				"Advanced Duplicator 2" )
+	language.Add( "Tool.advdupe2.desc",				"Duplicate things." )
+	language.Add( "Tool.advdupe2.left",				"Paste" )
+	language.Add( "Tool.advdupe2.right",			"Copy" )
+	language.Add( "Tool.advdupe2.right_world",		"Hit the world to select/deselect all" )
+	language.Add( "Tool.advdupe2.right_shift",		"Press Shift to area copy" )
+	language.Add( "Tool.advdupe2.right_alt",		"Copy an area" )
+	language.Add( "Tool.advdupe2.reload_alt",		"Autosave an area" )
+	language.Add( "Tool.advdupe2.right_shift_alt",	"Press Shift to cancel" )
+	language.Add( "Undone_AdvDupe2",				"Undone AdvDupe2 paste" )
+	language.Add( "Cleanup_AdvDupe2",				"AdvDupe2 Duplications" )
+	language.Add( "Cleaned_AdvDupe2",				"Cleaned up all AdvDupe2 Duplications" )
+	language.Add( "SBoxLimit_AdvDupe2",				"You've reached the AdvDupe2 Duplicator limit!" )
 
 	CreateClientConVar("advdupe2_offset_world", 0, false, true)
 	CreateClientConVar("advdupe2_offset_z", 0, false, true)
