@@ -14,6 +14,7 @@ util.AddNetworkString("AdvDupe2_CanAutoSave")
 CreateConVar("AdvDupe2_MaxFileSize", "200", FCVAR_ARCHIVE)
 CreateConVar("AdvDupe2_MaxEntities", "0", FCVAR_ARCHIVE)
 CreateConVar("AdvDupe2_MaxConstraints", "0", FCVAR_ARCHIVE)
+CreateConVar("AdvDupe2_Strict", "1", {FCVAR_ARCHIVE}, "Prevents entities from being duped with unauthorized data. Can fix certain exploits at the cost of some entities potentially duping incorrectly")
 
 CreateConVar("AdvDupe2_MaxContraptionEntities", "10", FCVAR_ARCHIVE)
 CreateConVar("AdvDupe2_MaxContraptionConstraints", "15", FCVAR_ARCHIVE)

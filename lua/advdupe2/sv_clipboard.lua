@@ -805,6 +805,8 @@ local function reportmodel(ply, model)
 	net.Send(ply)
 end
 
+local strictConvar = GetConVar("AdvDupe2_Strict")
+
 --[[
 	Name: GenericDuplicatorFunction
 	Desc: Override the default duplicator's GenericDuplicatorFunction function
@@ -834,7 +836,9 @@ local function GenericDuplicatorFunction(data, Player)
 	Entity:Activate()
 	DoGenericPhysics(Entity, data, Player)
 
-	table.Add(Entity:GetTable(), data)
+	if (not strictConvar:GetBool()) then
+		table.Add(Entity:GetTable(), data)
+	end
 	return Entity
 end
 
@@ -909,6 +913,17 @@ local function CreateEntityFromTable(EntTable, Player)
 
 	local EntityClass = duplicator.FindEntityClass(EntTable.Class)
 	if not IsAllowed(Player, EntTable.Class, EntityClass) then
+		return nil
+	end
+
+	local canCreate, blockReason = hook.Run( "AdvDupe2_CanCreateEntity", Player, EntTable.Class )
+	if canCreate == false then
+		local msg = [[Entity Class, "]] .. EntTable.Class .. [[" is Blocked! ]]
+		if isstring( blockReason ) then -- allow nil blockReason
+			msg = msg .. blockReason
+
+		end
+		Player:ChatPrint( msg )
 		return nil
 	end
 
